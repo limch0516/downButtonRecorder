@@ -35,25 +35,24 @@
         <TextView
             android:id="@+id/tv_stname"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:textAlignment="center" />
 
-        <LinearLayout
+        <TextView
+            android:id="@+id/tv_fduration"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="horizontal">
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textAlignment="center" />
 
-            <TextView
-                android:id="@+id/tv_ding"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1" />
+        <TextView
+            android:id="@+id/tv_ding"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text='"리싸이클뷰 빈공간터치 종료됨"재생됨"중지안됨"녹음오디오안들어감"녹음중지됨"'
+            android:textAlignment="center" />
 
-            <TextView
-                android:id="@+id/tv_fduration"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1" />
-        </LinearLayout>
     </LinearLayout>
 
     <LinearLayout

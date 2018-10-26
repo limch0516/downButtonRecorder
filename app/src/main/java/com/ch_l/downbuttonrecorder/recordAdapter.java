@@ -16,8 +16,7 @@ import java.util.ArrayList;
 
 public class recordAdapter extends RecyclerView.Adapter<recordAdapter.ViewHolder> {
     ArrayList<recordItem> recordItems;
-
-
+    private static ClickListener clickListener;
 
 
     public recordAdapter(ArrayList<recordItem> recordItems) {
@@ -37,26 +36,17 @@ public class recordAdapter extends RecyclerView.Adapter<recordAdapter.ViewHolder
         holder.item_date.setText(recordItems.get(position).item_date);
         holder.item_size.setText(recordItems.get(position).item_size);
         holder.item_time.setText(recordItems.get(position).item_time);
-//
-//holder.linearLayout.setOnClickListener(new View.OnClickListener() {
-//    @Override
-//    public void onClick(View view) {
-//        Context context = view.getContext();
-//        Toast.makeText(context, position+"번째", Toast.LENGTH_SHORT).show();
-//        EditText editText=(EditText)view.findViewById(R.id.tv_stname);
-//        editText.setText(String.valueOf(recordItems.get(position).getItem_name()));
-//
-//
-//    }
-//});
+
     }
 
     @Override
     public int getItemCount() {
+
         return recordItems.size();
     }
 
-    public class ViewHolder extends RecyclerView.ViewHolder {
+
+    public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnLongClickListener {
         TextView item_name;
         TextView item_time;
         TextView item_date;
@@ -68,6 +58,8 @@ public class recordAdapter extends RecyclerView.Adapter<recordAdapter.ViewHolder
 
         public ViewHolder(View itemView) {
             super(itemView);
+            itemView.setOnClickListener(this);
+            itemView.setOnLongClickListener(this);
             item_name = (TextView) itemView.findViewById(R.id.item_name);
             item_time = (TextView) itemView.findViewById(R.id.item_time);
             item_date = (TextView) itemView.findViewById(R.id.item_date);
@@ -78,5 +70,28 @@ public class recordAdapter extends RecyclerView.Adapter<recordAdapter.ViewHolder
             linearLayout = (LinearLayout) itemView.findViewById(R.id.Linear1);
 
         }
+
+        @Override
+        public void onClick(View view) {
+            clickListener.onItemClick(getAdapterPosition(),view);
+
+        }
+
+
+        @Override
+        public boolean onLongClick(View view) {
+            clickListener.onItemLongClick(getAdapterPosition(),view);
+            return false;
+        }
+    }
+
+    public void setOnItemClickListener(ClickListener clickListener) {
+        recordAdapter.clickListener = clickListener;
+    }
+
+    public interface ClickListener {
+        void onItemClick(int position, View v);
+
+        void onItemLongClick(int position, View v);
     }
 }

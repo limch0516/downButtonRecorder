@@ -22,6 +22,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -37,16 +38,18 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainAct";
     //    ActionBar actionBar;
+    boolean mediaplay = false;
     int recordplayTime = 0;
     private static String RECORDED_FILE;
     MediaPlayer mediaPlayer;
     MediaRecorder recorder;
     SeekBar seekBar;
-    Button btnPause, btnRecord, btnStop, btnStart;
+
+    ImageButton btnPause, btnRecord, btnStop, btnStart;
     //textView
     TextView tv_stname, tv_ding, tv_fduration;
     String playname, sdcard;
-    LinearLayout linearLayout;
+
 
     Thread recordtime;
 
@@ -76,9 +79,9 @@ public class MainActivity extends AppCompatActivity {
         refreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-
+                setData();
                 refreshLayout.setRefreshing(false);
-                Toast.makeText(getApplicationContext(), "새로고침 왜안됨...", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "새로고침 됨", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -86,32 +89,18 @@ public class MainActivity extends AppCompatActivity {
         tv_stname = (TextView) findViewById(R.id.tv_stname);
         tv_ding = (TextView) findViewById(R.id.tv_ding);
         tv_fduration = (TextView) findViewById(R.id.tv_fduration);
-        linearLayout = (LinearLayout) findViewById(R.id.Linear1);
 
 
-        //저장경로 지정
-
-//        File sdcard = Environment.getExternalStorageDirectory();
-
-        sdcard = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Download/downButtonRecorder";
-        File path = new File(sdcard);
-        if (!path.exists()) {
-            path.mkdirs();
-        }
-        File file = new File(sdcard, DateCheck() + ".3gp");
-
-        RECORDED_FILE = file.getAbsolutePath();
-
-        btnPause = (Button) findViewById(R.id.buttonPause);
-
-        btnStop = (Button) findViewById(R.id.buttonStop);
 
 
-        mediaPlayer = new MediaPlayer();
+        btnStop = (ImageButton) findViewById(R.id.buttonStop);
+
+
+
 
         //파일 재생버튼
         startplay();
-
+        playPause();
         //녹음시작버튼
         startRecordButton();
 
@@ -137,9 +126,12 @@ public class MainActivity extends AppCompatActivity {
                     mediaPlayer.stop();
                     mediaPlayer.release();
                     mediaPlayer = null;
+                    mediaplay=false;
+
+
                     Toast.makeText(getApplicationContext(), "재생 중지", Toast.LENGTH_SHORT).show();
                 }
-
+                setData();
             }
         });
     }
@@ -156,7 +148,6 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
-
             }
 
             @Override
@@ -168,27 +159,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    @Override
-    protected void onPause() {
-        if (recorder != null) {
-            recorder.release();
-            recorder = null;
-        }
-        if (mediaPlayer != null) {
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
-
-        super.onPause();
-    }
 
     private void setRecyclerView() {
-
+        adapter = new recordAdapter(items);
         recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
+        recyclerView.setAdapter(adapter);
         recyclerView.setHasFixedSize(true);
         layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
+        setData();
+    }
 
+    void setData() {
+        items.clear();
 
         //파일 정보 리스트에 넣기
         //불러올 파일 경로설정
@@ -199,12 +182,14 @@ public class MainActivity extends AppCompatActivity {
         File[] files = file.listFiles();
         //파일 정보 넣을 배열 만들기
 
+        //파일정보 배열만들기
         String[] item_name = new String[files.length];
         String[] item_time = new String[files.length];
         String[] item_size = new String[files.length];
         String[] item_date = new String[files.length];
-        for (int i = 0; i < files.length; i++) {
 
+        for (int i = 0; i < files.length; i++) {
+            //재생시간 만들기
             MediaMetadataRetriever retriever = new MediaMetadataRetriever();
             retriever.setDataSource(String.valueOf(files[i]));
             String time = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
@@ -227,51 +212,32 @@ public class MainActivity extends AppCompatActivity {
             item_size[i] = Long.toString(files[i].length()) + "byte";
 
             items.add(new recordItem(item_name[i], item_date[i], item_size[i], item_time[i]));
-
-
         }
 
-        adapter = new recordAdapter(items);
-        recyclerView.setAdapter(adapter);
         adapter.notifyDataSetChanged();
         //아이템 터치
-        recyclerView.addOnItemTouchListener(new RecyclerView.OnItemTouchListener() {
+        adapter.setOnItemClickListener(new recordAdapter.ClickListener() {
             @Override
-            public boolean onInterceptTouchEvent(RecyclerView rv, MotionEvent e) {
-                if (e.getAction() == MotionEvent.ACTION_UP) {
-                    View rev = rv.findChildViewUnder(e.getX(), e.getY());
-                    int position = rv.getChildAdapterPosition(rev);
+            public void onItemClick(int position, View v) {
+                tv_stname.setText(items.get(position).item_name);
+                playname = items.get(position).item_name;
 
-                    TextView textView = rv.getChildViewHolder(rev).itemView.findViewById(R.id.item_name);
-                    TextView textView1 = rv.getChildViewHolder(rev).itemView.findViewById(R.id.item_time);
-//                    tv_stname.setText(items.get(position).item_name);
-                    playname = textView.getText().toString();
-                    tv_stname.setText(textView.getText().toString());
-                    tv_fduration.setText("재생 시간: " + textView1.getText().toString());
-
-
-                    return false;
-                }
-                return false;
-            }
-
-
-            @Override
-            public void onTouchEvent(RecyclerView rv, MotionEvent e) {
-
+                tv_fduration.setText("재생 시간: " + items.get(position).item_time);
             }
 
             @Override
-            public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
-
+            public void onItemLongClick(int position, View v) {
+                Toast.makeText(MainActivity.this, position + "번째 기이이잉ㄹ게", Toast.LENGTH_SHORT).show();
             }
         });
-
     }
+
 
     // 재생시작
     private void startplay() {
-        btnStart = (Button) findViewById(R.id.buttonStart);
+        btnStart = (ImageButton) findViewById(R.id.buttonStart);
+
+
         btnStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -283,10 +249,13 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "paly start");
                 try {
                     mediaPlayer = new MediaPlayer();
+                if (mediaplay==false) {
                     String playname2 = sdcard + "/" + playname;
                     mediaPlayer.setDataSource(playname2);
-
                     mediaPlayer.prepare();
+                }
+
+                    mediaplay = true;
                     mediaPlayer.start();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -296,7 +265,7 @@ public class MainActivity extends AppCompatActivity {
                         public void run() {
                             // 음악이 계속 작동 중이라면
 
-                            while (mediaPlayer.isPlaying()) {
+                            while (mediaplay) {
                                 seekBar.setMax(mediaPlayer.getDuration()); // 음악의 시간을 최대로 설정
                                 seekBar.setProgress(mediaPlayer.getCurrentPosition()); // 현재 위치를
                                 // 지정
@@ -305,7 +274,7 @@ public class MainActivity extends AppCompatActivity {
                             seekBar.setProgress(0);
                         }
                     }.start();
-                }else{
+                } else {
                     seekBar.setProgress(0);
                 }
 
@@ -313,11 +282,35 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-    }
 
+    }
+    void playPause(){
+        btnPause = (ImageButton) findViewById(R.id.buttonPause);
+        btnPause.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+//                if (mediaplay==true) {
+//                    mediaplay=false;
+                    mediaPlayer.pause();
+//                }
+
+            }
+        });
+
+
+    }
     //녹음시작
     public void startRecordButton() {
-        btnRecord = (Button) findViewById(R.id.buttonRecord);
+        btnRecord = (ImageButton) findViewById(R.id.buttonRecord);
+        //버튼 누를때 파일생성
+        //저장경로 지정
+        sdcard = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Download/downButtonRecorder";
+        File path = new File(sdcard);
+        if (!path.exists()) {
+            path.mkdirs();
+        }
+        File file = new File(sdcard, DateCheck() + ".3gp");
+        RECORDED_FILE = file.getAbsolutePath();
 
         btnRecord.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -349,6 +342,7 @@ public class MainActivity extends AppCompatActivity {
                     //쓰레드 재실행 오류 방지
                     recordtime = new BackgroundThread();
                     recordtime.start();
+
 
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -382,38 +376,7 @@ public class MainActivity extends AppCompatActivity {
         return getTime;
     }
 
-    //    public void recordtime() {
-//        final Thread timer = new Thread() {
-//            SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
-//
-//            @Override
-//            public void run() {
-//                if (recorder == null) {
-//                    recordplayTime=0;
-//                    Log.d(TAG,"recordplayTime die");
-//                    return;
-//                }
-//                while (recorder != null) {
-//                    runOnUiThread(new Runnable() {
-//                        @Override
-//                        public void run() {
-//
-//                            recordplayTime++;
-//                            String re=String.valueOf(recordplayTime);
-//                            Log.d(TAG,"recordplayTime ing");
-//                            tv_ding.setText(re);
-//                        }
-//                    });
-//                    try {
-//                        Thread.sleep(1000);
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//            }
-//        };
-//        timer.start();
-//    }
+    //녹음시간 게산 쓰레드
     private class BackgroundThread extends Thread {
 
         SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
@@ -433,7 +396,7 @@ public class MainActivity extends AppCompatActivity {
 
                         Log.d(TAG, "recordplayTime ing");
 
-                        tv_ding.setText("녹음중:"+re+"sec");
+                        tv_ding.setText("녹음중:" + re + "sec");
                     }
                 });
                 try {

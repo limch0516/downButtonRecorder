@@ -1,6 +1,7 @@
 package com.ch_l.downbuttonrecorder;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.icu.text.LocaleDisplayNames;
 import android.media.MediaMetadataRetriever;
@@ -18,6 +19,8 @@ import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
@@ -44,8 +47,8 @@ public class MainActivity extends AppCompatActivity {
     MediaPlayer mediaPlayer;
     MediaRecorder recorder;
     SeekBar seekBar;
-
-    ImageButton btnPause, btnRecord, btnStop, btnStart;
+    File file;
+    ImageButton btnPause, btnRecord, btnStop, btnStart, btnrestart;
     //textView
     TextView tv_stname, tv_ding, tv_fduration;
     String playname, sdcard;
@@ -91,11 +94,7 @@ public class MainActivity extends AppCompatActivity {
         tv_fduration = (TextView) findViewById(R.id.tv_fduration);
 
 
-
-
         btnStop = (ImageButton) findViewById(R.id.buttonStop);
-
-
 
 
         //파일 재생버튼
@@ -103,13 +102,16 @@ public class MainActivity extends AppCompatActivity {
         playPause();
         //녹음시작버튼
         startRecordButton();
-
+        restartButton();
         seekbarchange();
 
         //녹음종료,재생종료버튼
         btnStop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                btnrestart.setVisibility(View.GONE);
+                btnStart.setVisibility(View.VISIBLE);
+                btnStart.setClickable(true);
                 if (recorder != null) {
                     recorder.stop();
                     recorder.release();
@@ -126,16 +128,36 @@ public class MainActivity extends AppCompatActivity {
                     mediaPlayer.stop();
                     mediaPlayer.release();
                     mediaPlayer = null;
-                    mediaplay=false;
+                    mediaplay = false;
 
 
                     Toast.makeText(getApplicationContext(), "재생 중지", Toast.LENGTH_SHORT).show();
                 }
                 setData();
-            }
+                }
         });
     }
+ //액션바생성
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch(item.getItemId()) {
+
+            case R.id.menu_settings:  // 설정 메뉴 선택
+                Intent intent=new Intent(getApplicationContext(),settingActivity.class);
+                startActivity(intent);
+                return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    //
     private void seekbarchange() {
         seekBar = (SeekBar) findViewById(R.id.seekBar);
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -143,6 +165,7 @@ public class MainActivity extends AppCompatActivity {
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser) {
                     mediaPlayer.seekTo(progress);
+
                 }
             }
 
@@ -157,7 +180,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
-
 
 
     private void setRecyclerView() {
@@ -232,6 +254,21 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    void restartButton() {
+        btnrestart = (ImageButton) findViewById(R.id.buttonRestart);
+        btnrestart.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mediaplay = true;
+                new seekbarchangeTread().start();
+                btnPause.setClickable(true);
+                mediaPlayer.start();
+
+
+            }
+        });
+
+    }
 
     // 재생시작
     private void startplay() {
@@ -241,6 +278,9 @@ public class MainActivity extends AppCompatActivity {
         btnStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                btnStart.setVisibility(View.GONE);
+                btnrestart.setVisibility(View.VISIBLE);
+                btnrestart.setClickable(false);
                 if (mediaPlayer != null) {
                     mediaPlayer.stop();
                     mediaPlayer.release();
@@ -249,56 +289,44 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "paly start");
                 try {
                     mediaPlayer = new MediaPlayer();
-                if (mediaplay==false) {
-                    String playname2 = sdcard + "/" + playname;
-                    mediaPlayer.setDataSource(playname2);
-                    mediaPlayer.prepare();
-                }
+                    if (mediaplay == false) {
+                        String playname2 = sdcard + "/" + playname;
+                        mediaPlayer.setDataSource(playname2);
+                        mediaPlayer.prepare();
+                    }
 
                     mediaplay = true;
                     mediaPlayer.start();
+                    seekBar.setMax(mediaPlayer.getDuration()); // 음악의 시간을 최대로 설정
+                    new seekbarchangeTread().start();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                if (mediaPlayer.isPlaying()) {
-                    new Thread() {
-                        public void run() {
-                            // 음악이 계속 작동 중이라면
-
-                            while (mediaplay) {
-                                seekBar.setMax(mediaPlayer.getDuration()); // 음악의 시간을 최대로 설정
-                                seekBar.setProgress(mediaPlayer.getCurrentPosition()); // 현재 위치를
-                                // 지정
-                                SystemClock.sleep(100);
-                            }
-                            seekBar.setProgress(0);
-                        }
-                    }.start();
-                } else {
-                    seekBar.setProgress(0);
-                }
-
-                Toast.makeText(getApplicationContext(), playname, Toast.LENGTH_SHORT).show();
 
             }
         });
 
     }
-    void playPause(){
+
+    void playPause() {
         btnPause = (ImageButton) findViewById(R.id.buttonPause);
         btnPause.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-//                if (mediaplay==true) {
-//                    mediaplay=false;
+                btnPause.setClickable(false);
+                btnrestart.setClickable(true);
+
+                if (mediaplay == true) {
+                    mediaplay = false;
                     mediaPlayer.pause();
-//                }
+                }
 
             }
         });
 
 
     }
+
     //녹음시작
     public void startRecordButton() {
         btnRecord = (ImageButton) findViewById(R.id.buttonRecord);
@@ -309,12 +337,14 @@ public class MainActivity extends AppCompatActivity {
         if (!path.exists()) {
             path.mkdirs();
         }
-        File file = new File(sdcard, DateCheck() + ".3gp");
-        RECORDED_FILE = file.getAbsolutePath();
+
 
         btnRecord.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+
+                file = new File(sdcard, new DateCheck().DateCheck()+ ".3gp");
+                RECORDED_FILE = file.getAbsolutePath();
                 if (recorder != null) {
                     recorder.stop();
                     recorder.release();
@@ -367,16 +397,42 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public String DateCheck() {
 
-        //녹음시작 시간구하기(녹음파일명)
-        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.KOREA);
-        String getTime = df.format(new Date());
+    class  DateCheck {
 
-        return getTime;
+
+        public String DateCheck() {
+
+            //녹음시작 시간구하기(녹음파일명)
+            SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.KOREA);
+            String getTime = df.format(new Date());
+
+            return getTime;
+        }
+    }
+    //시크바 쓰레드드
+    private class seekbarchangeTread extends Thread {
+        @Override
+        public void run() { // 쓰레드가 시작되면 콜백되는 메서드
+            // 씨크바 막대기 조금씩 움직이기 (노래 끝날 때까지 반복)
+            if (mediaplay == true) {
+                while (mediaplay) {
+                    seekBar.setProgress(mediaPlayer.getCurrentPosition());
+                    SystemClock.sleep(500);
+                }
+                seekBar.setProgress(0);
+
+            } else {
+                seekBar.setProgress(0);
+            }
+
+
+        }
+
+
     }
 
-    //녹음시간 게산 쓰레드
+    //녹음시간 계산 쓰레드
     private class BackgroundThread extends Thread {
 
         SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");

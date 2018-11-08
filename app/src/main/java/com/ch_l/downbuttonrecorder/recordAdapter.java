@@ -46,7 +46,7 @@ public class recordAdapter extends RecyclerView.Adapter<recordAdapter.ViewHolder
     }
 
 
-    public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnLongClickListener {
+    public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnLongClickListener  {
         TextView item_name;
         TextView item_time;
         TextView item_date;

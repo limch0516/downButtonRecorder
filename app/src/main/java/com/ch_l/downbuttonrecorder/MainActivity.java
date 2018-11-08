@@ -1,6 +1,7 @@
 package com.ch_l.downbuttonrecorder;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.icu.text.LocaleDisplayNames;
@@ -11,6 +12,8 @@ import android.os.Build;
 import android.os.CountDownTimer;
 import android.os.Environment;
 import android.os.SystemClock;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBar;
@@ -30,6 +33,9 @@ import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.gun0912.tedpermission.PermissionListener;
+import com.gun0912.tedpermission.TedPermission;
 
 import java.io.File;
 import java.io.IOException;
@@ -71,7 +77,50 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         setTitle("녹음기");
 
-        permissioncheck();
+//        PermissionListener permissionListener = new PermissionListener() {
+//            @Override
+//            public void onPermissionGranted() {
+//                Toast.makeText(getApplicationContext(), "권한 허가", Toast.LENGTH_SHORT).show();
+//            }
+//
+//            @Override
+//            public void onPermissionDenied(ArrayList<String> deniedPermissions) {
+//                Toast.makeText(getApplicationContext(), "권한 거부\n" + deniedPermissions.toString(), Toast.LENGTH_SHORT).show();
+//
+//            }
+//        };
+//        int permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO);
+//
+//        if(permissionCheck== PackageManager.PERMISSION_DENIED){
+//
+//            TedPermission.with(this)
+//                    .setPermissionListener(permissionListener)
+//                    .setRationaleMessage("오디오 녹음을 하기위한 권한 설정")
+//                    .setDeniedMessage("녹음[설정] > [권한] 에서 권한을 허용")
+//                    .setPermissions(Manifest.permission.RECORD_AUDIO).check();
+//
+//        }  int permissionCheck2 = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
+//
+//        if(permissionCheck2== PackageManager.PERMISSION_DENIED){
+//
+//            TedPermission.with(this)
+//                    .setPermissionListener(permissionListener)
+//                    .setRationaleMessage("녹음파일을 저장 하기위한 권한 설정")
+//                    .setDeniedMessage("저장[설정] > [권한] 에서 권한을 허용")
+//                    .setPermissions(Manifest.permission.READ_EXTERNAL_STORAGE).check();
+//
+//        }
+//        int permissionCheck3 = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+//
+//        if(permissionCheck3== PackageManager.PERMISSION_DENIED){
+//
+//            TedPermission.with(this)
+//                    .setPermissionListener(permissionListener)
+//                    .setRationaleMessage("녹음파일을 저장 하기위한 권한 설정")
+//                    .setDeniedMessage("저장[설정] > [권한] 에서 권한을 허용")
+//                    .setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE).check();
+//
+//        }
 
         //recycleView 설정
         setRecyclerView();
@@ -134,10 +183,11 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(getApplicationContext(), "재생 중지", Toast.LENGTH_SHORT).show();
                 }
                 setData();
-                }
+            }
         });
     }
- //액션바생성
+
+    //액션바생성
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
@@ -146,10 +196,10 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch(item.getItemId()) {
+        switch (item.getItemId()) {
 
             case R.id.menu_settings:  // 설정 메뉴 선택
-                Intent intent=new Intent(getApplicationContext(),settingActivity.class);
+                Intent intent = new Intent(this, settingActivity.class);
                 startActivity(intent);
                 return true;
         }
@@ -241,6 +291,7 @@ public class MainActivity extends AppCompatActivity {
         adapter.setOnItemClickListener(new recordAdapter.ClickListener() {
             @Override
             public void onItemClick(int position, View v) {
+
                 tv_stname.setText(items.get(position).item_name);
                 playname = items.get(position).item_name;
 
@@ -342,8 +393,8 @@ public class MainActivity extends AppCompatActivity {
         btnRecord.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
-                file = new File(sdcard, new DateCheck().DateCheck()+ ".3gp");
+//파일이름 설정
+                file = new File(sdcard, new DateCheck().DateCheck() + ".mp4");
                 RECORDED_FILE = file.getAbsolutePath();
                 if (recorder != null) {
                     recorder.stop();
@@ -358,7 +409,7 @@ public class MainActivity extends AppCompatActivity {
                 //오디오 입력 형식 설정
                 recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
                 //파일 저장 방식 설정(확장자)
-                recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+                recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
                 //코덱 설정
                 recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
                 //파일 저장 경로 설정
@@ -382,23 +433,57 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-
-    //권한설정 무조건 다시(2018.10.24)
-    public void permissioncheck() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(Manifest.permission_group.STORAGE) != PackageManager.PERMISSION_GRANTED ||
-                    checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                if (shouldShowRequestPermissionRationale(Manifest.permission_group.STORAGE)) ;
-                if (shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)) ;
-
-                requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 1);
-                requestPermissions(new String[]{Manifest.permission_group.STORAGE}, 1);
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
+            case 1: {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, "녹음 권한을 사용자가 승인함.", Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(this, "녹음 권한 거부됨.", Toast.LENGTH_LONG).show();
+                }
+                return;
+            }
+            case 2: {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, "파일관리 권한을 사용자가 승인함.", Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(this, "파일관리 권한 거부됨.", Toast.LENGTH_LONG).show();
+                }
+                return;
             }
         }
     }
 
+    //권한설정 무조건 다시(2018.10.24)
+    public void permissioncheck() {
 
-    class  DateCheck {
+
+//        if (ContextCompat.checkSelfPermission(this, Manifest.permission_group.STORAGE) == PackageManager.PERMISSION_GRANTED){
+//            //Manifest.permission.READ_CALENDAR이 접근 승낙 상태 일때
+//        } else{
+//            //Manifest.permission.READ_CALENDAR이 접근 거절 상태 일때
+//            if (ActivityCompat.shouldShowRequestPermissionRationale(this,Manifest.permission_group.STORAGE)){
+//                //사용자가 다시 보지 않기에 체크를 하지 않고, 권한 설정을 거절한 이력이 있는 경우
+//            } else{
+//                //사용자가 다시 보지 않기에 체크하고, 권한 설정을 거절한 이력이 있는 경우
+//
+//
+//
+//
+//            //사용자에게 접근권한 설정을 요구하는 다이얼로그를 띄운다.
+//            ActivityCompat.requestPermissions(this,new String[]{Manifest.permission_group.STORAGE},0);
+//        }}
+
+
+
+
+
+    }
+
+
+    class DateCheck {
 
 
         public String DateCheck() {
@@ -410,6 +495,7 @@ public class MainActivity extends AppCompatActivity {
             return getTime;
         }
     }
+
     //시크바 쓰레드드
     private class seekbarchangeTread extends Thread {
         @Override
@@ -428,6 +514,15 @@ public class MainActivity extends AppCompatActivity {
 
 
         }
+
+
+    }
+
+
+    @Override
+    public void onBackPressed() {
+
+
 
 
     }

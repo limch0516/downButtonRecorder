@@ -38,6 +38,8 @@ import com.gun0912.tedpermission.PermissionListener;
 import com.gun0912.tedpermission.TedPermission;
 
 import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -50,10 +52,10 @@ public class MainActivity extends AppCompatActivity {
     boolean mediaplay = false;
     int recordplayTime = 0;
     private static String RECORDED_FILE;
+    long firstTouchTime = 0L;
     MediaPlayer mediaPlayer;
     MediaRecorder recorder;
     SeekBar seekBar;
-    File file;
     ImageButton btnPause, btnRecord, btnStop, btnStart, btnrestart;
     //textView
     TextView tv_stname, tv_ding, tv_fduration;
@@ -339,19 +341,29 @@ public class MainActivity extends AppCompatActivity {
                 }
                 Log.d(TAG, "paly start");
                 try {
+
                     mediaPlayer = new MediaPlayer();
-                    if (mediaplay == false) {
-                        String playname2 = sdcard + "/" + playname;
-                        mediaPlayer.setDataSource(playname2);
-                        mediaPlayer.prepare();
-                    }
+                    String playname2 = sdcard + "/" + playname;
+                    Toast.makeText(MainActivity.this, playname2 + "재생합니당", Toast.LENGTH_SHORT).show();
+                    FileInputStream fis = new FileInputStream(playname2);
+
+                    FileDescriptor fd = fis.getFD();
+
+                    mediaPlayer.setDataSource(fd);
+
+
+//                        mediaPlayer.setDataSource(playname2);
+                    mediaPlayer.prepare();
+                    mediaPlayer.start();
+
 
                     mediaplay = true;
-                    mediaPlayer.start();
                     seekBar.setMax(mediaPlayer.getDuration()); // 음악의 시간을 최대로 설정
                     new seekbarchangeTread().start();
+//                        Toast.makeText(MainActivity.this, "재생 시작", Toast.LENGTH_SHORT).show();
                 } catch (IOException e) {
                     e.printStackTrace();
+                    Log.d(TAG, "왜오류가 날까요");
                 }
 
             }
@@ -394,7 +406,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
 //파일이름 설정
-                file = new File(sdcard, new DateCheck().DateCheck() + ".mp4");
+                String datechexk = new DateCheck().DateCheck();
+                File file = new File(sdcard, datechexk + ".mp4");
+//                file = new File(sdcard, new DateCheck().DateCheck());
                 RECORDED_FILE = file.getAbsolutePath();
                 if (recorder != null) {
                     recorder.stop();
@@ -410,8 +424,9 @@ public class MainActivity extends AppCompatActivity {
                 recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
                 //파일 저장 방식 설정(확장자)
                 recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+
                 //코덱 설정
-                recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+                recorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
                 //파일 저장 경로 설정
                 recorder.setOutputFile(RECORDED_FILE);
                 try {
@@ -432,32 +447,32 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        switch (requestCode) {
-            case 1: {
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(this, "녹음 권한을 사용자가 승인함.", Toast.LENGTH_LONG).show();
-                } else {
-                    Toast.makeText(this, "녹음 권한 거부됨.", Toast.LENGTH_LONG).show();
-                }
-                return;
-            }
-            case 2: {
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(this, "파일관리 권한을 사용자가 승인함.", Toast.LENGTH_LONG).show();
-                } else {
-                    Toast.makeText(this, "파일관리 권한 거부됨.", Toast.LENGTH_LONG).show();
-                }
-                return;
-            }
-        }
-    }
+//
+//    @Override
+//    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+//        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+//        switch (requestCode) {
+//            case 1: {
+//                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+//                    Toast.makeText(this, "녹음 권한을 사용자가 승인함.", Toast.LENGTH_LONG).show();
+//                } else {
+//                    Toast.makeText(this, "녹음 권한 거부됨.", Toast.LENGTH_LONG).show();
+//                }
+//                return;
+//            }
+//            case 2: {
+//                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+//                    Toast.makeText(this, "파일관리 권한을 사용자가 승인함.", Toast.LENGTH_LONG).show();
+//                } else {
+//                    Toast.makeText(this, "파일관리 권한 거부됨.", Toast.LENGTH_LONG).show();
+//                }
+//                return;
+//            }
+//        }
+//    }
 
     //권한설정 무조건 다시(2018.10.24)
-    public void permissioncheck() {
+//    public void permissioncheck() {
 
 
 //        if (ContextCompat.checkSelfPermission(this, Manifest.permission_group.STORAGE) == PackageManager.PERMISSION_GRANTED){
@@ -477,10 +492,7 @@ public class MainActivity extends AppCompatActivity {
 //        }}
 
 
-
-
-
-    }
+//    }
 
 
     class DateCheck {
@@ -521,9 +533,18 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
+        long nowTouchTime = System.currentTimeMillis();
 
+        if ((nowTouchTime - firstTouchTime) <= 3000L) {
+            super.onBackPressed();
+        } else {
 
+            Toast.makeText(
+                    getApplicationContext(),
+                    "[이전 버튼](super.onBackPressed())을 한 번 더 누르면 종료됩니다.", Toast.LENGTH_SHORT).show();
 
+            firstTouchTime = nowTouchTime;
+        }
 
     }
 

@@ -37,7 +37,23 @@ public class IntroActivity extends AppCompatActivity {
                     .setPermissionListener(new PermissionListener() {
                         @Override
                         public void onPermissionGranted() {
-                            startActivity(intent);
+
+                            Handler handler = new Handler();
+                            handler.postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+
+                                    Intent intent = new Intent(
+                                            getApplicationContext(),
+                                            MainActivity.class
+                                    );
+
+                                    startActivity(intent);
+                                    finish();
+
+                                }
+                            }, 1500);
+
 
                         }
 
@@ -47,24 +63,6 @@ public class IntroActivity extends AppCompatActivity {
                         }
                     })
                     .check();
-        } else {
-
-            Handler handler = new Handler();
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-
-                    Intent intent = new Intent(
-                            getApplicationContext(),
-                            MainActivity.class
-                    );
-
-                    startActivity(intent);
-                    finish();
-
-                }
-            }, 200);
-
         }
 
 

@@ -23,6 +23,10 @@
 
         <activity android:name=".settingActivity" />
         <activity android:name=".MainActivity"></activity>
+        <service android:name=".RecordService"></service>
+
+
+
     </application>
 
 </manifest>
